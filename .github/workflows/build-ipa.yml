@@ -54,6 +54,12 @@ jobs:
           test -d "$APP"
           mkdir -p "$RUNNER_TEMP/ipa/Payload"
           cp -R "$APP" "$RUNNER_TEMP/ipa/Payload/"
+          # Ad-hoc sign (no certificate): gives the binary an LC_CODE_SIGNATURE block.
+          # On-device signers built on zsign (Feather, ESign, KSign…) replace that block
+          # with your real signature and can't sign a binary that lacks one.
+          codesign --force --sign - --timestamp=none --generate-entitlement-der "$RUNNER_TEMP/ipa/Payload/PillNag.app"
+          codesign --verify --verbose=2 "$RUNNER_TEMP/ipa/Payload/PillNag.app"
+          otool -l "$RUNNER_TEMP/ipa/Payload/PillNag.app/PillNag" | grep -q LC_CODE_SIGNATURE
           cd "$RUNNER_TEMP/ipa"
           zip -qry PillNag-unsigned.ipa Payload
           ls -lh PillNag-unsigned.ipa
