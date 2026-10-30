@@ -1,0 +1,64 @@
+name: PillNag
+
+options:
+  bundleIdPrefix: com.pillnag
+  deploymentTarget:
+    iOS: "26.0"
+  createIntermediateGroups: true
+  generateEmptyDirectories: true
+
+settings:
+  base:
+    SWIFT_VERSION: "5.0"
+    MARKETING_VERSION: "0.1.0"
+    CURRENT_PROJECT_VERSION: "1"
+    DEVELOPMENT_TEAM: ""
+    CODE_SIGN_STYLE: Manual
+    ENABLE_USER_SCRIPT_SANDBOXING: YES
+
+targets:
+  PillNag:
+    type: application
+    platform: iOS
+    deploymentTarget: "26.0"
+    sources:
+      - path: PillNag
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.pillnag.app
+        PRODUCT_NAME: PillNag
+        TARGETED_DEVICE_FAMILY: "1"
+        ASSETCATALOG_COMPILER_APPICON_NAME: AppIcon
+        ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME: AccentColor
+        GENERATE_INFOPLIST_FILE: NO
+        ENABLE_PREVIEWS: YES
+        SUPPORTS_MACCATALYST: NO
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: NO
+    info:
+      path: PillNag/Info.plist
+      properties:
+        CFBundleDisplayName: PillNag
+        CFBundleShortVersionString: $(MARKETING_VERSION)
+        CFBundleVersion: $(CURRENT_PROJECT_VERSION)
+        LSRequiresIPhoneOS: true
+        ITSAppUsesNonExemptEncryption: false
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        UISupportedInterfaceOrientations:
+          - UIInterfaceOrientationPortrait
+        NSAlarmKitUsageDescription: PillNag rings an alarm when it's time to take your medication and keeps nagging until you mark the dose as taken.
+        UIBackgroundModes:
+          - fetch
+        BGTaskSchedulerPermittedIdentifiers:
+          - com.pillnag.app.refresh
+
+schemes:
+  PillNag:
+    build:
+      targets:
+        PillNag: all
+    run:
+      config: Debug
+    archive:
+      config: Release
