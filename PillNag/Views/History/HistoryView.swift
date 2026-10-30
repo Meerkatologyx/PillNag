@@ -67,9 +67,9 @@ struct HistoryView: View {
             }
             .chartYScale(domain: 0...100)
             .chartYAxis {
-                AxisMarks(values: [0, 50, 100]) { value in
+                AxisMarks(values: [0.0, 50.0, 100.0]) { value in
                     AxisGridLine()
-                    AxisValueLabel { if let v = value.as(Int.self) { Text("\(v)%") } }
+                    AxisValueLabel { if let v = value.as(Double.self) { Text("\(Int(v))%") } }
                 }
             }
             .chartXAxis {

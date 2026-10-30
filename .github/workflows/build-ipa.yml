@@ -16,7 +16,7 @@ jobs:
     runs-on: macos-26
     timeout-minutes: 45
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
       - name: Select newest Xcode 26
         run: |
@@ -59,7 +59,7 @@ jobs:
           ls -lh PillNag-unsigned.ipa
 
       - name: Upload IPA
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: PillNag-unsigned-${{ github.run_number }}
           path: ${{ runner.temp }}/ipa/PillNag-unsigned.ipa
@@ -67,7 +67,7 @@ jobs:
 
       - name: Upload build log
         if: failure()
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: xcodebuild-log-${{ github.run_number }}
           path: ${{ runner.temp }}/xcodebuild.log
