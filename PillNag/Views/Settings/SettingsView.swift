@@ -147,7 +147,7 @@ struct SettingsView: View {
         } footer: {
             Text(maxNags == 0
                  ? "Rings once at dose time."
-                 : "If you don't tap Taken, PillNag rings again every \(nagInterval) min, up to \(maxNags) more times (\(nagInterval * maxNags) min). Individual meds can override this.")
+                 : "Until you mark the dose taken in the app, PillNag rings again every \(nagInterval) min, up to \(maxNags) more times (\(nagInterval * maxNags) min). Individual meds can override this.")
         }
     }
 
@@ -188,7 +188,7 @@ struct SettingsView: View {
         } header: {
             Text("Alerts")
         } footer: {
-            Text("Alarms ring even in Silent mode and Focus. If alarms aren't allowed, PillNag falls back to notifications with Taken and Snooze buttons.")
+            Text("Alarms ring even in Silent mode and Focus. Stopping an alarm only silences it — doses are marked taken in the app. If alarms aren't allowed, PillNag falls back to notifications with a Snooze button.")
         }
     }
 

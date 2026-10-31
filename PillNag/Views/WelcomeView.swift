@@ -33,7 +33,7 @@ struct WelcomeView: View {
                 GlassEffectContainer(spacing: 12) {
                     VStack(spacing: 12) {
                         feature("alarm.waves.left.and.right.fill", "Real alarms", "Rings like a clock alarm at dose time — even on silent.")
-                        feature("repeat", "Escalating nags", "Keeps ringing every few minutes until you tap Taken.")
+                        feature("repeat", "Escalating nags", "Keeps ringing every few minutes until you mark it taken in the app.")
                         feature("flame.fill", "Streaks & history", "See what you took, missed, and how long you've kept it up.")
                     }
                 }

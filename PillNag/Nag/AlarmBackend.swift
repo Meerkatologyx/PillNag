@@ -10,8 +10,9 @@ struct DoseAlarmMetadata: AlarmMetadata {
     var nagIndex: Int
 }
 
-/// AlarmKit-backed nags. Every alarm has a "Taken" stop button and a "Snooze" button,
-/// both wired to App Intents that run inside the app process (no extension needed).
+/// AlarmKit-backed nags. Every alarm has a "Stop" button that only silences it, and a "Snooze"
+/// button wired to an App Intent that runs inside the app process (no extension needed).
+/// Marking a dose taken is deliberately only possible from inside the app.
 @MainActor
 enum AlarmBackend {
     static let maxScheduled = 96
@@ -94,7 +95,7 @@ enum AlarmBackend {
     private static func configuration(for nag: PlannedNag, tint: Color) -> AlarmManager.AlarmConfiguration<DoseAlarmMetadata> {
         let alert = AlarmPresentation.Alert(
             title: LocalizedStringResource(stringLiteral: nag.title),
-            stopButton: AlarmButton(text: "Taken", textColor: .white, systemImageName: "checkmark.circle.fill"),
+            stopButton: AlarmButton(text: "Stop", textColor: .white, systemImageName: "stop.circle.fill"),
             secondaryButton: AlarmButton(text: "Snooze", textColor: .white, systemImageName: "zzz"),
             secondaryButtonBehavior: .custom
         )
@@ -107,7 +108,8 @@ enum AlarmBackend {
             countdownDuration: nil,
             schedule: .fixed(nag.fireDate),
             attributes: attributes,
-            stopIntent: TakeDoseIntent(doseKey: nag.doseKey),
+            // Stop only silences this alarm; follow-ups keep coming until the dose is marked taken in the app.
+            stopIntent: nil,
             secondaryIntent: SnoozeDoseIntent(doseKey: nag.doseKey),
             sound: nag.sound.alarmSound
         )

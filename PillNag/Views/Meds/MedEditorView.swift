@@ -316,7 +316,7 @@ struct MedEditorView: View {
         let interval = draft.customNag ? draft.nagInterval : NagConfig.global.intervalMinutes
         let count = draft.customNag ? draft.maxNags : NagConfig.global.maxFollowUps
         if count == 0 { return "Rings once at dose time." }
-        return "Rings at dose time, then every \(interval) min up to \(count) more times (\(interval * count) min) until you tap Taken."
+        return "Rings at dose time, then every \(interval) min up to \(count) more times (\(interval * count) min) until you mark it taken in the app."
     }
 
     // MARK: Actions

@@ -5,7 +5,6 @@ import UserNotifications
 @MainActor
 enum NotificationBackend {
     nonisolated static let category = "DOSE_NAG"
-    nonisolated static let takenAction = "DOSE_TAKEN"
     nonisolated static let snoozeAction = "DOSE_SNOOZE"
     static let idPrefix = "nag."
     /// iOS keeps at most 64 pending local notifications per app; leave room for others.
@@ -13,12 +12,12 @@ enum NotificationBackend {
 
     private static var center: UNUserNotificationCenter { .current() }
 
+    /// Only Snooze is offered: marking a dose taken is deliberately only possible inside the app
+    /// (tapping the notification opens it).
     static func registerCategories() {
-        let taken = UNNotificationAction(identifier: takenAction, title: "Taken", options: [],
-                                         icon: UNNotificationActionIcon(systemImageName: "checkmark.circle.fill"))
         let snooze = UNNotificationAction(identifier: snoozeAction, title: "Snooze", options: [],
                                           icon: UNNotificationActionIcon(systemImageName: "zzz"))
-        let category = UNNotificationCategory(identifier: category, actions: [taken, snooze],
+        let category = UNNotificationCategory(identifier: category, actions: [snooze],
                                               intentIdentifiers: [], options: [])
         center.setNotificationCategories([category])
     }
@@ -82,7 +81,7 @@ enum NotificationBackend {
     }
 }
 
-/// Handles the Taken / Snooze buttons on notifications.
+/// Handles the Snooze button on notifications. Tapping the notification itself just opens the app.
 final class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
     static let shared = NotificationDelegate()
 
@@ -94,13 +93,8 @@ final class NotificationDelegate: NSObject, UNUserNotificationCenterDelegate {
     func userNotificationCenter(_ center: UNUserNotificationCenter,
                                 didReceive response: UNNotificationResponse) async {
         guard let key = response.notification.request.content.userInfo["doseKey"] as? String else { return }
-        switch response.actionIdentifier {
-        case NotificationBackend.takenAction:
-            await DoseActions.handleExternal(.taken, doseKey: key)
-        case NotificationBackend.snoozeAction:
+        if response.actionIdentifier == NotificationBackend.snoozeAction {
             await DoseActions.handleExternal(.snoozed, doseKey: key)
-        default:
-            break
         }
     }
 }

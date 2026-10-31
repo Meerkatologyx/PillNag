@@ -6,13 +6,13 @@ A native SwiftUI medication tracker for iOS 26+ that **keeps nagging until you t
 
 - **Meds**: name, dose, pill shape, colors or SF Symbol icon, notes and a refill count with a low-supply warning.
 - **Schedules**: daily times, specific weekdays, every X hours, or as-needed.
-- **Nagging**: an AlarmKit alarm at dose time with **Taken** and **Snooze** buttons. Escalating follow-ups ring every N minutes up to a maximum count. Taken cancels the rest of the chain and Snooze restarts it later. If alarms aren't allowed, local notifications with the same actions are used instead.
+- **Nagging**: an AlarmKit alarm at dose time with **Stop** and **Snooze** buttons. Escalating follow-ups ring every N minutes up to a maximum count. Stop only silences the current alarm; the chain ends only when you mark the dose taken (or skip it) **inside the app**. Snooze restarts the chain later. If alarms aren't allowed, local notifications with a Snooze action are used instead.
 - **Today** view with a progress ring and streak, **History** with an adherence chart, and day-by-day logs.
 - **Customization**: accent color, glass tint and strength, light/dark/system, nag interval, max nags, snooze length and alarm sound. Each med can override the nag settings.
 
 ## How nagging works
 
-`NagScheduler.rescheduleAll()` books every alert for the next 36 hours up front, so nags still fire if the app is never opened. It runs on launch, on foreground, after any change, from the alarm and notification buttons (via App Intents running in the app's own process), and from background refresh.
+`NagScheduler.rescheduleAll()` books every alert for the next 36 hours up front, so nags still fire if the app is never opened. It runs on launch, on foreground, after any change, from the alarm and notification Snooze buttons (via an App Intent running in the app's own process), and from background refresh.
 
 ## Building (no Mac needed)
 

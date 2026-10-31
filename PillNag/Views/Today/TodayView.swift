@@ -63,7 +63,7 @@ struct TodayView: View {
                                 total: scheduled.count, streak: streak)
 
                     if let next = nextUp(scheduled) {
-                        DoseCard(item: next, now: now, prominent: true, onAction: { feedbackTick += 1 })
+                        DoseCard(item: next, onAction: { feedbackTick += 1 })
                             .transition(.blurReplace)
                     }
 
@@ -73,9 +73,16 @@ struct TodayView: View {
 
                     if !scheduled.isEmpty {
                         SectionTitle("Schedule", trailing: "\(scheduled.count) dose\(scheduled.count == 1 ? "" : "s")")
-                        ForEach(scheduled) { item in
-                            DoseCard(item: item, now: now, prominent: false, onAction: { feedbackTick += 1 })
+                        VStack(spacing: 0) {
+                            ForEach(scheduled) { item in
+                                DoseRow(item: item, onAction: { feedbackTick += 1 })
+                                if item.id != scheduled.last?.id {
+                                    Divider().padding(.leading, 70)
+                                }
+                            }
                         }
+                        .padding(.vertical, 4)
+                        .cardGlass(cornerRadius: 26)
                     }
 
                     if !asNeeded.isEmpty {
@@ -143,89 +150,67 @@ private struct TodayHeader: View {
     }
 }
 
-// MARK: - Dose card
+// MARK: - Dose card (hero)
 
+/// The big "up next" card with full-width actions.
 struct DoseCard: View {
     @Environment(\.theme) private var theme
     let item: DoseItem
-    let now: Date
-    var prominent: Bool
     var onAction: () -> Void = {}
 
     @Namespace private var glassNS
 
     var body: some View {
-        VStack(alignment: .leading, spacing: 14) {
-            HStack(spacing: 14) {
-                if let med = item.medication {
-                    MedBadge(med: med, size: prominent ? 64 : 48)
-                } else {
-                    Circle().fill(Color(hex: item.colorHex).gradient).frame(width: 40, height: 40)
-                }
+        VStack(alignment: .leading, spacing: 16) {
+            HStack(alignment: .top, spacing: 14) {
+                DoseBadge(item: item, size: 64)
                 VStack(alignment: .leading, spacing: 4) {
-                    if prominent {
-                        Text(item.state.needsAttention ? "Take now" : "Up next")
-                            .font(.caption.weight(.semibold))
-                            .textCase(.uppercase)
-                            .foregroundStyle(theme.accent)
-                    }
-                    Text(item.medName).font(prominent ? .title3.bold() : .headline)
-                    HStack(spacing: 6) {
-                        if !item.medDose.isEmpty { Text(item.medDose) }
-                        if let at = item.scheduledAt { Text("·"); Text(at.shortTime) }
-                    }
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
+                    Text(item.state.needsAttention ? "Take now" : "Up next")
+                        .font(.caption.weight(.semibold))
+                        .textCase(.uppercase)
+                        .foregroundStyle(theme.accent)
+                    Text(item.medName)
+                        .font(.title3.bold())
+                        .lineLimit(1)
+                    DoseSubtitle(item: item)
                 }
-                Spacer(minLength: 0)
-                if item.state.needsAttention {
-                    Image(systemName: "bell.and.waves.left.and.right.fill")
-                        .foregroundStyle(item.state == .overdue ? .red : theme.accent)
-                        .symbolEffect(.wiggle, options: .repeat(.periodic(delay: 1.5)))
-                }
+                Spacer(minLength: 8)
+                StateBadge(state: item.state)
+                    .fixedSize()
             }
 
             actions
         }
-        .padding(prominent ? 18 : 14)
-        .cardGlass(cornerRadius: prominent ? 30 : 24,
-                   tint: prominent && item.state.needsAttention ? theme.accent.opacity(0.5) : nil)
+        .padding(18)
+        .cardGlass(cornerRadius: 30, tint: item.state.needsAttention ? theme.accent.opacity(0.5) : nil)
     }
 
     private var actions: some View {
         GlassEffectContainer(spacing: 10) {
             HStack(spacing: 10) {
-                if item.state.isActionable {
-                    GlassActionButton(title: "Taken", symbol: "checkmark", tint: theme.accent, prominent: true) {
-                        perform { if let med = item.medication { DoseActions.markTaken(med, scheduledAt: item.scheduledAt) } }
+                if item.state.isActionable, let med = item.medication {
+                    GlassActionButton(title: "Taken", symbol: "checkmark", tint: theme.accent, prominent: true, fill: true) {
+                        perform { DoseActions.markTaken(med, scheduledAt: item.scheduledAt) }
                     }
                     .glassEffectID("primary", in: glassNS)
 
-                    if let at = item.scheduledAt, item.state != .upcoming {
-                        GlassActionButton(title: "Snooze", symbol: "zzz") {
-                            perform { if let med = item.medication { DoseActions.snooze(med, scheduledAt: at) } }
-                        }
-                        .glassEffectID("snooze", in: glassNS)
-                    }
-
                     if let at = item.scheduledAt {
-                        GlassActionButton(title: "Skip", symbol: "forward.end") {
-                            perform { if let med = item.medication { DoseActions.skip(med, scheduledAt: at) } }
+                        if item.state != .upcoming {
+                            GlassActionButton(title: "Snooze", symbol: "zzz", fill: true) {
+                                perform { DoseActions.snooze(med, scheduledAt: at) }
+                            }
+                            .glassEffectID("snooze", in: glassNS)
+                        }
+                        GlassActionButton(title: "Skip", symbol: "forward.end", fill: true) {
+                            perform { DoseActions.skip(med, scheduledAt: at) }
                         }
                         .glassEffectID("skip", in: glassNS)
                     }
-                    Spacer(minLength: 0)
-                    StateBadge(state: item.state)
-                } else {
-                    StateBadge(state: item.state)
-                        .glassEffectID("primary", in: glassNS)
-                    Spacer(minLength: 0)
-                    if let event = item.event {
-                        GlassActionButton(title: "Undo", symbol: "arrow.uturn.backward") {
-                            perform { DoseActions.undo(event) }
-                        }
-                        .glassEffectID("undo", in: glassNS)
+                } else if let event = item.event {
+                    GlassActionButton(title: "Undo", symbol: "arrow.uturn.backward", fill: true) {
+                        perform { DoseActions.undo(event) }
                     }
+                    .glassEffectID("primary", in: glassNS)
                 }
             }
         }
@@ -237,21 +222,144 @@ struct DoseCard: View {
     }
 }
 
+// MARK: - Dose row (schedule list)
+
+/// Compact one-line dose with a single quick action; Snooze/Skip live in the context menu.
+struct DoseRow: View {
+    @Environment(\.theme) private var theme
+    let item: DoseItem
+    var onAction: () -> Void = {}
+
+    var body: some View {
+        HStack(spacing: 12) {
+            DoseBadge(item: item, size: 44)
+            VStack(alignment: .leading, spacing: 2) {
+                Text(item.medName)
+                    .font(.headline)
+                    .lineLimit(1)
+                DoseSubtitle(item: item)
+            }
+            Spacer(minLength: 8)
+            StateBadge(state: item.state)
+                .fixedSize()
+            trailingButton
+        }
+        .padding(.horizontal, 14)
+        .padding(.vertical, 10)
+        .contentShape(.rect)
+        .contextMenu { menu }
+    }
+
+    @ViewBuilder
+    private var trailingButton: some View {
+        if item.state.isActionable, let med = item.medication {
+            Button {
+                perform { DoseActions.markTaken(med, scheduledAt: item.scheduledAt) }
+            } label: {
+                Image(systemName: "checkmark")
+                    .font(.subheadline.bold())
+                    .foregroundStyle(.white)
+                    .frame(width: 38, height: 38)
+                    .glassEffect(.regular.tint(theme.accent).interactive(), in: .circle)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Mark taken")
+        } else if let event = item.event {
+            Button {
+                perform { DoseActions.undo(event) }
+            } label: {
+                Image(systemName: "arrow.uturn.backward")
+                    .font(.subheadline.bold())
+                    .frame(width: 38, height: 38)
+                    .glassEffect(.regular.interactive(), in: .circle)
+            }
+            .buttonStyle(.plain)
+            .accessibilityLabel("Undo")
+        }
+    }
+
+    @ViewBuilder
+    private var menu: some View {
+        if item.state.isActionable, let med = item.medication {
+            Button("Taken", systemImage: "checkmark") {
+                perform { DoseActions.markTaken(med, scheduledAt: item.scheduledAt) }
+            }
+            if let at = item.scheduledAt {
+                Button("Snooze", systemImage: "zzz") {
+                    perform { DoseActions.snooze(med, scheduledAt: at) }
+                }
+                Button("Skip", systemImage: "forward.end") {
+                    perform { DoseActions.skip(med, scheduledAt: at) }
+                }
+            }
+        } else if let event = item.event {
+            Button("Undo", systemImage: "arrow.uturn.backward") {
+                perform { DoseActions.undo(event) }
+            }
+        }
+    }
+
+    private func perform(_ action: () -> Void) {
+        withAnimation(.spring(response: 0.5, dampingFraction: 0.75)) { action() }
+        onAction()
+    }
+}
+
+private struct DoseBadge: View {
+    let item: DoseItem
+    let size: CGFloat
+
+    var body: some View {
+        if let med = item.medication {
+            MedBadge(med: med, size: size)
+        } else {
+            Circle()
+                .fill(Color(hex: item.colorHex).gradient)
+                .frame(width: size * 0.6, height: size * 0.6)
+                .frame(width: size, height: size)
+        }
+    }
+}
+
+/// "6:30 PM · 10 mg" — the separator only appears when there's a dose.
+private struct DoseSubtitle: View {
+    let item: DoseItem
+
+    var body: some View {
+        Text(parts.joined(separator: " · "))
+            .font(.subheadline)
+            .foregroundStyle(.secondary)
+            .lineLimit(1)
+    }
+
+    private var parts: [String] {
+        var parts: [String] = []
+        if let at = item.scheduledAt { parts.append(at.shortTime) }
+        if !item.medDose.isEmpty { parts.append(item.medDose) }
+        return parts
+    }
+}
+
 /// Capsule glass button that participates in glass morphing.
 struct GlassActionButton: View {
     let title: String
     let symbol: String
     var tint: Color?
     var prominent = false
+    /// Stretch to share the row equally with sibling buttons.
+    var fill = false
     let action: () -> Void
 
     var body: some View {
         Button(action: action) {
             Label(title, systemImage: symbol)
                 .font(.subheadline.weight(.semibold))
+                .lineLimit(1)
+                .minimumScaleFactor(0.8)
                 .foregroundStyle(prominent ? Color.white : Color.primary)
-                .padding(.horizontal, 14)
-                .padding(.vertical, 9)
+                .padding(.horizontal, 12)
+                .padding(.vertical, 11)
+                .frame(maxWidth: fill ? .infinity : nil)
                 .glassEffect(prominent ? .regular.tint(tint).interactive() : .regular.interactive(), in: .capsule)
         }
         .buttonStyle(.plain)
