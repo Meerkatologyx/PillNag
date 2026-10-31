@@ -5,6 +5,7 @@ import UserNotifications
 enum SettingsKey {
     static let nagInterval = "nag.intervalMinutes"
     static let maxNags = "nag.maxFollowUps"
+    static let untilTaken = "nag.untilTaken"
     static let snooze = "nag.snoozeMinutes"
     static let sound = "nag.sound"
     static let accent = "theme.accent"
@@ -17,6 +18,7 @@ enum SettingsKey {
 enum NagDefaults {
     static let interval = 5
     static let maxNags = 6
+    static let untilTaken = false
     static let snooze = 10
     static let sound = AlarmSound.chime.rawValue
 }
@@ -53,6 +55,8 @@ enum AlarmSound: String, CaseIterable, Identifiable {
 struct NagConfig {
     var intervalMinutes: Int
     var maxFollowUps: Int
+    /// Ignore `maxFollowUps` and keep nagging until the dose is handled or the next dose takes over.
+    var untilTaken: Bool
     var snoozeMinutes: Int
     var sound: AlarmSound
 
@@ -61,6 +65,7 @@ struct NagConfig {
         return NagConfig(
             intervalMinutes: d.object(forKey: SettingsKey.nagInterval) as? Int ?? NagDefaults.interval,
             maxFollowUps: d.object(forKey: SettingsKey.maxNags) as? Int ?? NagDefaults.maxNags,
+            untilTaken: d.object(forKey: SettingsKey.untilTaken) as? Bool ?? NagDefaults.untilTaken,
             snoozeMinutes: d.object(forKey: SettingsKey.snooze) as? Int ?? NagDefaults.snooze,
             sound: AlarmSound(rawValue: d.string(forKey: SettingsKey.sound) ?? "") ?? .chime
         )
@@ -71,6 +76,7 @@ struct NagConfig {
         guard let med else { return config }
         if let v = med.nagIntervalOverride { config.intervalMinutes = v }
         if let v = med.maxNagsOverride { config.maxFollowUps = v }
+        if let v = med.nagUntilTakenOverride { config.untilTaken = v }
         if let v = med.snoozeOverride { config.snoozeMinutes = v }
         if let v = med.soundOverride, let s = AlarmSound(rawValue: v) { config.sound = s }
         config.intervalMinutes = max(1, config.intervalMinutes)
@@ -79,6 +85,23 @@ struct NagConfig {
         return config
     }
 
-    /// How long a full nag chain lasts.
+    /// How long a finite nag chain lasts.
     var chainDuration: TimeInterval { TimeInterval(intervalMinutes * maxFollowUps * 60) }
+
+    /// Longest an until-taken chain can run: it also ends when the med's next dose is due.
+    static let untilTakenCap: TimeInterval = 24 * 3600
+
+    /// When nagging for this dose stops on its own (exclusive). Taking or skipping it ends it sooner.
+    func nagEnd(for med: Medication, occurrence: Date) -> Date {
+        guard untilTaken else { return occurrence.addingTimeInterval(chainDuration + 1) }
+        let cap = occurrence.addingTimeInterval(Self.untilTakenCap)
+        let next = med.occurrences(from: occurrence.addingTimeInterval(1), to: cap).first
+        return next ?? cap
+    }
+
+    /// Short description, e.g. "Every 5 min · until taken".
+    var summary: String {
+        let count = untilTaken ? "until taken" : "up to \(maxFollowUps) follow-up\(maxFollowUps == 1 ? "" : "s")"
+        return "Every \(intervalMinutes) min · \(count)"
+    }
 }

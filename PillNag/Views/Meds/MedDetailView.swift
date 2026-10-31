@@ -108,7 +108,8 @@ struct MedDetailView: View {
 
     private var nagSummary: some View {
         let config = NagConfig.resolved(for: med)
-        let custom = med.nagIntervalOverride != nil || med.maxNagsOverride != nil || med.snoozeOverride != nil || med.soundOverride != nil
+        let custom = med.nagIntervalOverride != nil || med.maxNagsOverride != nil || med.nagUntilTakenOverride != nil
+            || med.snoozeOverride != nil || med.soundOverride != nil
         return HStack(spacing: 14) {
             Image(systemName: med.nagEnabled ? "bell.badge.waveform.fill" : "bell.slash.fill")
                 .font(.title2)
@@ -118,7 +119,7 @@ struct MedDetailView: View {
                 Text(med.nagEnabled ? (custom ? "Custom nagging" : "Default nagging") : "Nagging off")
                     .font(.headline)
                 if med.nagEnabled && med.scheduleKind != .asNeeded {
-                    Text("Every \(config.intervalMinutes) min · up to \(config.maxFollowUps) follow-ups · \(config.snoozeMinutes) min snooze · \(config.sound.title)")
+                    Text("\(config.summary) · \(config.snoozeMinutes) min snooze · \(config.sound.title)")
                         .font(.caption)
                         .foregroundStyle(.secondary)
                 }

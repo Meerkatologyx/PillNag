@@ -27,6 +27,7 @@ struct MedDraft {
     var customNag = false
     var nagInterval = NagConfig.global.intervalMinutes
     var maxNags = NagConfig.global.maxFollowUps
+    var untilTaken = NagConfig.global.untilTaken
     var snooze = NagConfig.global.snoozeMinutes
     var soundOverride: String?
 
@@ -51,10 +52,12 @@ struct MedDraft {
         intervalHours = med.intervalHours
         intervalAnchor = med.intervalAnchorMinutes
         nagEnabled = med.nagEnabled
-        customNag = med.nagIntervalOverride != nil || med.maxNagsOverride != nil || med.snoozeOverride != nil || med.soundOverride != nil
+        customNag = med.nagIntervalOverride != nil || med.maxNagsOverride != nil || med.nagUntilTakenOverride != nil
+            || med.snoozeOverride != nil || med.soundOverride != nil
         let resolved = NagConfig.resolved(for: med)
         nagInterval = resolved.intervalMinutes
         maxNags = resolved.maxFollowUps
+        untilTaken = resolved.untilTaken
         snooze = resolved.snoozeMinutes
         soundOverride = med.soundOverride
     }
@@ -96,11 +99,13 @@ struct MedDraft {
         if customNag {
             med.nagIntervalOverride = nagInterval
             med.maxNagsOverride = maxNags
+            med.nagUntilTakenOverride = untilTaken
             med.snoozeOverride = snooze
             med.soundOverride = soundOverride
         } else {
             med.nagIntervalOverride = nil
             med.maxNagsOverride = nil
+            med.nagUntilTakenOverride = nil
             med.snoozeOverride = nil
             med.soundOverride = nil
         }
@@ -289,15 +294,20 @@ struct MedEditorView: View {
 
     @ViewBuilder
     private var nagEditor: some View {
-        Toggle("Nag me until I take it", isOn: $draft.nagEnabled.animation(.snappy))
+        Toggle("Alarms for this med", isOn: $draft.nagEnabled.animation(.snappy))
         if draft.nagEnabled {
             Toggle("Custom settings for this med", isOn: $draft.customNag.animation(.snappy))
             if draft.customNag {
                 Stepper(value: $draft.nagInterval, in: 1...60) {
                     LabeledContent("Nag every", value: "\(draft.nagInterval) min")
                 }
-                Stepper(value: $draft.maxNags, in: 0...20) {
-                    LabeledContent("Follow-ups", value: "\(draft.maxNags)")
+                Toggle(isOn: $draft.untilTaken.animation(.snappy)) {
+                    Label("Nag until taken", systemImage: "infinity")
+                }
+                if !draft.untilTaken {
+                    Stepper(value: $draft.maxNags, in: 0...20) {
+                        LabeledContent("Follow-ups", value: "\(draft.maxNags)")
+                    }
                 }
                 Stepper(value: $draft.snooze, in: 1...120) {
                     LabeledContent("Snooze", value: "\(draft.snooze) min")
@@ -315,6 +325,10 @@ struct MedEditorView: View {
     private var nagFooter: String {
         let interval = draft.customNag ? draft.nagInterval : NagConfig.global.intervalMinutes
         let count = draft.customNag ? draft.maxNags : NagConfig.global.maxFollowUps
+        let forever = draft.customNag ? draft.untilTaken : NagConfig.global.untilTaken
+        if forever {
+            return "Rings at dose time, then every \(interval) min until you mark it taken in the app, or until this med's next dose is due."
+        }
         if count == 0 { return "Rings once at dose time." }
         return "Rings at dose time, then every \(interval) min up to \(count) more times (\(interval * count) min) until you mark it taken in the app."
     }

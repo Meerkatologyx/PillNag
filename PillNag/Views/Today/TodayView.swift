@@ -49,7 +49,7 @@ struct TodayView: View {
     @ViewBuilder
     private func content(now: Date) -> some View {
         let items = DoseBoard.items(on: now, meds: meds, events: events, now: now)
-        let scheduled = items.filter { $0.scheduledAt != nil }
+        let scheduled = DoseBoard.carryOver(meds: meds, events: events, now: now) + items.filter { $0.scheduledAt != nil }
         let streak = DoseBoard.streaks(meds: meds, events: events, now: now).current
         let lowSupply = meds.filter(\.isLowSupply)
         let asNeeded = meds.filter { $0.scheduleKind == .asNeeded }

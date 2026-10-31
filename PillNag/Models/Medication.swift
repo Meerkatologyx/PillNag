@@ -39,6 +39,7 @@ final class Medication {
     var nagEnabled: Bool = true
     var nagIntervalOverride: Int?
     var maxNagsOverride: Int?
+    var nagUntilTakenOverride: Bool?
     var snoozeOverride: Int?
     var soundOverride: String?
 

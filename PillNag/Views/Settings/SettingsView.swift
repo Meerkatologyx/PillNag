@@ -15,6 +15,7 @@ struct SettingsView: View {
     @AppStorage(SettingsKey.glassStrength) private var glassStrength = 0.25
     @AppStorage(SettingsKey.nagInterval) private var nagInterval = NagDefaults.interval
     @AppStorage(SettingsKey.maxNags) private var maxNags = NagDefaults.maxNags
+    @AppStorage(SettingsKey.untilTaken) private var untilTaken = NagDefaults.untilTaken
     @AppStorage(SettingsKey.snooze) private var snooze = NagDefaults.snooze
     @AppStorage(SettingsKey.sound) private var soundRaw = NagDefaults.sound
 
@@ -40,6 +41,7 @@ struct SettingsView: View {
             }
             .onChange(of: nagInterval) { reschedule() }
             .onChange(of: maxNags) { reschedule() }
+            .onChange(of: untilTaken) { reschedule() }
             .onChange(of: snooze) { reschedule() }
             .onChange(of: soundRaw) { reschedule() }
             .onChange(of: accentRaw) { reschedule() }
@@ -126,8 +128,13 @@ struct SettingsView: View {
             Stepper(value: $nagInterval, in: 1...60) {
                 LabeledContent("Nag every", value: "\(nagInterval) min")
             }
-            Stepper(value: $maxNags, in: 0...20) {
-                LabeledContent("Follow-up nags", value: "\(maxNags)")
+            Toggle(isOn: $untilTaken.animation(.snappy)) {
+                Label("Nag until taken", systemImage: "infinity")
+            }
+            if !untilTaken {
+                Stepper(value: $maxNags, in: 0...20) {
+                    LabeledContent("Follow-up nags", value: "\(maxNags)")
+                }
             }
             Stepper(value: $snooze, in: 1...120) {
                 LabeledContent("Snooze length", value: "\(snooze) min")
@@ -145,9 +152,7 @@ struct SettingsView: View {
         } header: {
             Text("Nagging")
         } footer: {
-            Text(maxNags == 0
-                 ? "Rings once at dose time."
-                 : "Until you mark the dose taken in the app, PillNag rings again every \(nagInterval) min, up to \(maxNags) more times (\(nagInterval * maxNags) min). Individual meds can override this.")
+            Text(nagFooter)
         }
     }
 
@@ -200,6 +205,14 @@ struct SettingsView: View {
     }
 
     // MARK: Helpers
+
+    private var nagFooter: String {
+        if untilTaken {
+            return "PillNag rings every \(nagInterval) min until you mark the dose taken (or skip it) in the app, or until that med's next dose is due. Individual meds can override this."
+        }
+        if maxNags == 0 { return "Rings once at dose time." }
+        return "Until you mark the dose taken in the app, PillNag rings again every \(nagInterval) min, up to \(maxNags) more times (\(nagInterval * maxNags) min). Individual meds can override this."
+    }
 
     private var alarmStatusText: String {
         switch alarmState {

@@ -108,8 +108,9 @@ enum AlarmBackend {
             countdownDuration: nil,
             schedule: .fixed(nag.fireDate),
             attributes: attributes,
-            // Stop only silences this alarm; follow-ups keep coming until the dose is marked taken in the app.
-            stopIntent: nil,
+            // Stop only silences this alarm (and tops up the booked alarms); follow-ups keep coming
+            // until the dose is marked taken in the app.
+            stopIntent: RefreshNagsIntent(),
             secondaryIntent: SnoozeDoseIntent(doseKey: nag.doseKey),
             sound: nag.sound.alarmSound
         )

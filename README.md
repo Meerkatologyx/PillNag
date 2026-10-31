@@ -6,7 +6,7 @@ A native SwiftUI medication tracker for iOS 26+ that **keeps nagging until you t
 
 - **Meds**: name, dose, pill shape, colors or SF Symbol icon, notes and a refill count with a low-supply warning.
 - **Schedules**: daily times, specific weekdays, every X hours, or as-needed.
-- **Nagging**: an AlarmKit alarm at dose time with **Stop** and **Snooze** buttons. Escalating follow-ups ring every N minutes up to a maximum count. Stop only silences the current alarm; the chain ends only when you mark the dose taken (or skip it) **inside the app**. Snooze restarts the chain later. If alarms aren't allowed, local notifications with a Snooze action are used instead.
+- **Nagging**: an AlarmKit alarm at dose time with **Stop** and **Snooze** buttons. Escalating follow-ups ring every N minutes up to a maximum count, or endlessly with **Nag until taken** (globally or per med) until the dose is handled or that med's next dose takes over. Stop only silences the current alarm; the chain ends only when you mark the dose taken (or skip it) **inside the app**. Snooze restarts the chain later. If alarms aren't allowed, local notifications with a Snooze action are used instead.
 - **Today** view with a progress ring and streak, **History** with an adherence chart, and day-by-day logs.
 - **Customization**: accent color, glass tint and strength, light/dark/system, nag interval, max nags, snooze length and alarm sound. Each med can override the nag settings.
 

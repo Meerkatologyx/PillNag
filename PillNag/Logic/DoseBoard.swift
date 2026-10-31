@@ -51,6 +51,11 @@ struct DoseItem: Identifiable {
 
     /// The time shown for the dose.
     var displayTime: Date { scheduledAt ?? event?.actionAt ?? .now }
+
+    func with(state: DoseState) -> DoseItem {
+        DoseItem(id: id, medication: medication, medID: medID, medName: medName, medDose: medDose,
+                 colorHex: colorHex, scheduledAt: scheduledAt, event: event, state: state)
+    }
 }
 
 /// Pure functions that turn meds + events into dose items, streaks and adherence.
@@ -114,6 +119,25 @@ enum DoseBoard {
         }
 
         return items.sorted { $0.displayTime < $1.displayTime }
+    }
+
+    /// Yesterday's doses that are still being nagged about (e.g. an evening dose past midnight),
+    /// surfaced on Today as overdue so they can still be marked taken.
+    static func carryOver(meds: [Medication], events: [DoseEvent], now: Date = .now,
+                          calendar: Calendar = .current) -> [DoseItem] {
+        guard let yesterday = calendar.date(byAdding: .day, value: -1, to: now) else { return [] }
+        return items(on: yesterday, meds: meds, events: events, now: now, calendar: calendar).compactMap { item in
+            guard let med = item.medication, med.nagEnabled, let at = item.scheduledAt else { return nil }
+            switch item.state {
+            case .snoozed:
+                return item
+            case .missed:
+                let end = NagConfig.resolved(for: med).nagEnd(for: med, occurrence: at)
+                return end > now ? item.with(state: .overdue) : nil
+            default:
+                return nil
+            }
+        }
     }
 
     struct DaySummary: Identifiable {
